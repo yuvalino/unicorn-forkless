@@ -463,6 +463,7 @@ else()
         -D_LARGEFILE_SOURCE
         -Wall
         -fPIC
+        -g
     )
     if (ATOMIC_LINKAGE_FIX)
         add_compile_options(

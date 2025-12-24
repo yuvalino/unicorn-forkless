@@ -4,13 +4,13 @@
 
 // simple linked list implementation
 
-struct list *list_new(void)
+struct list *unicorn_list_new(void)
 {
     return calloc(1, sizeof(struct list));
 }
 
 // removed linked list nodes but does not free their content
-void list_clear(struct list *list)
+void unicorn_list_clear(struct list *list)
 {
     struct list_item *next, *cur = list->head;
     while (cur != NULL) {
@@ -27,7 +27,7 @@ void list_clear(struct list *list)
 
 // insert a new item at the begin of the list.
 // returns generated linked list node, or NULL on failure
-void *list_insert(struct list *list, void *data)
+void *unicorn_list_insert(struct list *list, void *data)
 {
     struct list_item *item = malloc(sizeof(struct list_item));
     if (item == NULL) {
@@ -48,7 +48,7 @@ void *list_insert(struct list *list, void *data)
 
 // append a new item at the end of the list.
 // returns generated linked list node, or NULL on failure
-void *list_append(struct list *list, void *data)
+void *unicorn_list_append(struct list *list, void *data)
 {
     struct list_item *item = malloc(sizeof(struct list_item));
     if (item == NULL) {
@@ -66,7 +66,7 @@ void *list_append(struct list *list, void *data)
 }
 
 // returns true if entry was removed, false otherwise
-bool list_remove(struct list *list, void *data)
+bool unicorn_list_remove(struct list *list, void *data)
 {
     struct list_item *next, *cur, *prev = NULL;
     // is list empty?
@@ -98,7 +98,7 @@ bool list_remove(struct list *list, void *data)
 }
 
 // returns true if the data exists in the list
-bool list_exists(struct list *list, void *data)
+bool unicorn_list_exists(struct list *list, void *data)
 {
     struct list_item *next, *cur = NULL;
     // is list empty?
