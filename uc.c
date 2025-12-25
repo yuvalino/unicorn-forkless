@@ -75,7 +75,7 @@ static void restore_jit_state(uc_engine *uc)
 
 static void *hook_insert(struct list *l, struct hook *h)
 {
-    void *item = list_insert(l, (void *)h);
+    void *item = unicorn_list_insert(l, (void *)h);
     if (item) {
         h->refs++;
     }
@@ -84,7 +84,7 @@ static void *hook_insert(struct list *l, struct hook *h)
 
 static void *hook_append(struct list *l, struct hook *h)
 {
-    void *item = list_append(l, (void *)h);
+    void *item = unicorn_list_append(l, (void *)h);
     if (item) {
         h->refs++;
     }
@@ -557,7 +557,7 @@ uc_err uc_close(uc_engine *uc)
     clear_deleted_hooks(uc);
 
     for (i = 0; i < UC_HOOK_MAX; i++) {
-        list_clear(&uc->hook[i]);
+        unicorn_list_clear(&uc->hook[i]);
     }
 
     free(uc->mapped_blocks);
@@ -939,13 +939,13 @@ static void clear_deleted_hooks(uc_engine *uc)
          cur != NULL && (hook = (struct hook *)cur->data); cur = cur->next) {
         assert(hook->to_delete);
         for (i = 0; i < UC_HOOK_MAX; i++) {
-            if (list_remove(&uc->hook[i], (void *)hook)) {
+            if (unicorn_list_remove(&uc->hook[i], (void *)hook)) {
                 break;
             }
         }
     }
 
-    list_clear(&uc->hooks_to_del);
+    unicorn_list_clear(&uc->hooks_to_del);
 }
 
 UNICORN_EXPORT
@@ -1918,7 +1918,7 @@ uc_err uc_hook_del(uc_engine *uc, uc_hook hh)
     // an optimization would be to align the hook pointer
     // and store the type mask in the hook pointer.
     for (i = 0; i < UC_HOOK_MAX; i++) {
-        if (list_exists(&uc->hook[i], (void *)hook)) {
+        if (unicorn_list_exists(&uc->hook[i], (void *)hook)) {
             g_hash_table_foreach(hook->hooked_regions, hook_invalidate_region,
                                  uc);
             g_hash_table_remove_all(hook->hooked_regions);
