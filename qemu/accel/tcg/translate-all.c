@@ -767,15 +767,12 @@ static void page_lock_pair(struct uc_struct *uc, PageDesc **ret_p1, tb_page_addr
 # define MAX_CODE_GEN_BUFFER_SIZE  ((size_t)-1)
 #endif
 
+#ifndef DEFAULT_CODE_GEN_BUFFER_SIZE_1
 #if TCG_TARGET_REG_BITS == 32
 #define DEFAULT_CODE_GEN_BUFFER_SIZE_1 (32 * MiB)
-#else /* TCG_TARGET_REG_BITS == 64 */
-/*
- * We expect most system emulation to run one or two guests per host.
- * Users running large scale system emulation may want to tweak their
- * runtime setup via the tb-size control on the command line.
- */
+#else
 #define DEFAULT_CODE_GEN_BUFFER_SIZE_1 (1 * GiB)
+#endif
 #endif
 
 #define DEFAULT_CODE_GEN_BUFFER_SIZE \
