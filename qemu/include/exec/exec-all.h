@@ -377,7 +377,18 @@ static inline uint32_t tb_cflags(const TranslationBlock *tb)
 /* current cflags for hashing/comparison */
 static inline uint32_t curr_cflags(void)
 {
-    return 0;
+    /*
+     * tvm runs each guest thread on its own unicorn instance, all of them
+     * over the same memory, at once. Code translated for a serial context
+     * makes the guest's atomic instructions (LDXR/STXR, CAS, LDADD, ...)
+     * plain loads and stores and its barriers nothing, which another thread
+     * then interleaves with: a multithreaded guest's reference counts and
+     * lock-free queues broke (ripgrep: double frees, then translation
+     * blocks run into garbage and the whole VM aborted). CF_PARALLEL has
+     * them translated to the host's atomics and barriers, as QEMU's
+     * multithreaded TCG does.
+     */
+    return CF_PARALLEL;
 }
 
 /* TranslationBlock invalidate API */

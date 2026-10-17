@@ -366,6 +366,24 @@ static inline bool cpu_handle_exception(CPUState *cpu, int *ret)
         return false;
     }
 
+    /*
+     * An atomic operation the parallel translation could not do in place
+     * (CF_PARALLEL, see curr_cflags: one misaligned, or on a page needing
+     * the slow path). QEMU runs that one instruction translated for a
+     * serial context, the other vCPUs stopped (cpu_exec_step_atomic);
+     * unicorn had no such step and returned EXCP_ATOMIC to a loop that
+     * re-executed the instruction, raising it again, forever. The next
+     * block is that one instruction, serial; tvm's other threads are not
+     * stopped meanwhile (they run engines of their own), which only an
+     * atomic the hardware itself faults on, or one on memory tvm never
+     * maps that way, gets to see.
+     */
+    if (cpu->exception_index == EXCP_ATOMIC) {
+        cpu->exception_index = -1;
+        cpu->cflags_next_tb = 1;
+        return false;
+    }
+
     if (cpu->exception_index >= EXCP_INTERRUPT) {
         /* exit request from the cpu execution loop */
         *ret = cpu->exception_index;

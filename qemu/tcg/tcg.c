@@ -543,6 +543,21 @@ void tcg_region_init(TCGContext *tcg_ctx)
 
     tcg_ctx->tree = g_tree_new(tb_tc_cmp);
 
+    /*
+     * The first region, now, before anything is translated: QEMU assigns
+     * it to each TCG thread as it registers (tcg_register_thread), which
+     * unicorn has none of, so it was assigned the first time the buffer
+     * filled up instead, from tcg_tb_alloc -- and assigning a region
+     * clears it (tcg_region_assign) with no flush: every block translated
+     * so far stayed hashed, cached and chained, its code and descriptor
+     * zeroes. The next jump into one ran zeroed TCI bytecode (an unknown
+     * opcode, abort) or chained from a zeroed descriptor (NULL write in
+     * tb_set_jmp_target): tvm's emulated programs crashed the whole VM
+     * once one thread had translated a buffer's worth (8 MB), soonest with
+     * many threads, each with an engine of its own. A full buffer now
+     * finds no region left and flushes, as it should.
+     */
+    tcg_region_initial_alloc__locked(tcg_ctx);
 }
 
 /*
