@@ -415,6 +415,24 @@ static void tcg_region_assign(TCGContext *s, size_t curr_region)
     s->code_gen_highwater = (char *)end - TCG_HIGHWATER;
 }
 
+/*
+ * The first region, at init: as tcg_region_initial_alloc__locked, but
+ * without clearing it. The buffer was just mapped (anonymous, zero, its
+ * pages not yet touched); clearing it would make every engine's whole
+ * buffer resident at once, 8 MB for each of tvm's threads.
+ */
+static void tcg_region_assign_fresh(TCGContext *s)
+{
+    void *start, *end;
+
+    tcg_region_bounds(s, 0, &start, &end);
+    s->code_gen_buffer = start;
+    s->code_gen_ptr = start;
+    s->code_gen_buffer_size = (char *)end - (char *)start;
+    s->code_gen_highwater = (char *)end - TCG_HIGHWATER;
+    s->region.current = 1;
+}
+
 static bool tcg_region_alloc__locked(TCGContext *s)
 {
     if (s->region.current == s->region.n) {
@@ -557,7 +575,7 @@ void tcg_region_init(TCGContext *tcg_ctx)
      * many threads, each with an engine of its own. A full buffer now
      * finds no region left and flushes, as it should.
      */
-    tcg_region_initial_alloc__locked(tcg_ctx);
+    tcg_region_assign_fresh(tcg_ctx);
 }
 
 /*

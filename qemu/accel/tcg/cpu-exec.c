@@ -368,15 +368,19 @@ static inline bool cpu_handle_exception(CPUState *cpu, int *ret)
 
     /*
      * An atomic operation the parallel translation could not do in place
-     * (CF_PARALLEL, see curr_cflags: one misaligned, or on a page needing
-     * the slow path). QEMU runs that one instruction translated for a
-     * serial context, the other vCPUs stopped (cpu_exec_step_atomic);
-     * unicorn had no such step and returned EXCP_ATOMIC to a loop that
-     * re-executed the instruction, raising it again, forever. The next
-     * block is that one instruction, serial; tvm's other threads are not
-     * stopped meanwhile (they run engines of their own), which only an
-     * atomic the hardware itself faults on, or one on memory tvm never
-     * maps that way, gets to see.
+     * (CF_PARALLEL, see curr_cflags): one on memory without a plain host
+     * mapping (TLB_MMIO: unicorn's unmapped pages), an x86 LOCK operation
+     * that is not naturally aligned (x86 translates them without MO_ALIGN;
+     * arm64's misaligned atomics are alignment faults instead), or any
+     * 64/128-bit one on a host without CONFIG_ATOMIC64/CMPXCHG128. QEMU
+     * runs that one instruction translated for a serial context, the other
+     * vCPUs stopped (cpu_exec_step_atomic); unicorn had no such step and
+     * returned EXCP_ATOMIC to a loop that re-executed the instruction,
+     * raising it again, forever. The next block is that one instruction,
+     * serial, at the pc cpu_loop_exit_atomic restored (GETPC, under TCI
+     * too). tvm's other threads are not stopped meanwhile (they run
+     * engines of their own), so such an x86 split-lock operation is not
+     * atomic against them; on arm64 it is an access that faults anyway.
      */
     if (cpu->exception_index == EXCP_ATOMIC) {
         cpu->exception_index = -1;

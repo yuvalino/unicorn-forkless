@@ -474,6 +474,13 @@ static bool tci_compare64(uint64_t u0, uint64_t u1, TCGCond condition)
 # define qemu_st_beq(X)  stq_be_p(g2h(taddr), X)
 #endif
 
+/*
+ * GETPC() of a helper the interpreter is calling (see exec/exec-all.h):
+ * the end of the call op, as a native backend's return address is the
+ * end of its call instruction (GETPC_ADJ steps back into the op).
+ */
+__thread uintptr_t tci_tb_ptr;
+
 /* Interpret pseudo code in tb. */
 uintptr_t tcg_qemu_tb_exec(CPUArchState *env, uint8_t *tb_ptr)
 {
@@ -507,16 +514,13 @@ uintptr_t tcg_qemu_tb_exec(CPUArchState *env, uint8_t *tb_ptr)
 #endif
         TCGMemOpIdx oi;
 
-#if defined(GETPC)
-        tci_tb_ptr = (uintptr_t)tb_ptr;
-#endif
-
         /* Skip opcode and size entry. */
         tb_ptr += 2;
 
         switch (opc) {
         case INDEX_op_call:
             t0 = tci_read_ri(regs, &tb_ptr);
+            tci_tb_ptr = (uintptr_t)tb_ptr;
 #if TCG_TARGET_REG_BITS == 32
             tmp64 = ((helper_function)t0)(tci_read_reg(regs, TCG_REG_R0),
                                           tci_read_reg(regs, TCG_REG_R1),

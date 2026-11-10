@@ -85,6 +85,12 @@ static int tcg_cpu_exec(struct uc_struct *uc)
 {
     int r;
     bool finish = false;
+#if defined(CONFIG_TCG_INTERPRETER)
+    /* a helper's GETPC (exec/exec-all.h) when this emulation runs inside
+       one, from a hook: the helper may read it again once this returns,
+       and an exit by cpu_loop_exit skips the interpreter's own code */
+    uintptr_t outer_tci_tb_ptr = tci_tb_ptr;
+#endif
 
     while (!uc->exit_request) {
         CPUState *cpu = uc->cpu;
@@ -136,6 +142,13 @@ static int tcg_cpu_exec(struct uc_struct *uc)
     }
     uc->exit_request = 0;
     uc->cpu->exit_request = 0;
+    /* a serial step for EXCP_ATOMIC (cpu_handle_exception) still pending
+       when emulation stopped is not the next start's: there it re-raises
+       if needed */
+    uc->cpu->cflags_next_tb = -1;
+#if defined(CONFIG_TCG_INTERPRETER)
+    tci_tb_ptr = outer_tci_tb_ptr;
+#endif
     uc->cpu->icount_decr_ptr->u16.high = 0;
     uc->cpu->tcg_exit_req = 0;
 

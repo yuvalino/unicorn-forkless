@@ -403,7 +403,19 @@ void tb_exec_lock(struct uc_struct*);
 void tb_exec_unlock(struct uc_struct*);
 
 /* GETPC is the true target of the return instruction that we'll execute.  */
-#ifdef _MSC_VER
+#if defined(CONFIG_TCG_INTERPRETER)
+/*
+ * Under TCI a helper returns into the interpreter, not into the code
+ * buffer, so its return address names no translated instruction and
+ * cpu_restore_state could not find the guest pc: a helper that left the
+ * TB (cpu_loop_exit_atomic, a fault) left env->pc wherever the last TB
+ * exit had put it. The interpreter records the end of the op it is
+ * calling from instead, as its qemu_ld/st ops pass for retaddr. Per
+ * thread: each runs an engine of its own.
+ */
+extern __thread uintptr_t tci_tb_ptr;
+# define GETPC() tci_tb_ptr
+#elif defined(_MSC_VER)
 #include <intrin.h>
 # define GETPC() (uintptr_t)_ReturnAddress()
 #else
