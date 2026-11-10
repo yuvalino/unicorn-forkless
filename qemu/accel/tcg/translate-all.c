@@ -341,7 +341,10 @@ bool cpu_restore_state(CPUState *cpu, uintptr_t host_pc, bool will_exit)
     check_offset = host_pc - (uintptr_t) uc->tcg_ctx->code_gen_buffer;
 
     if (check_offset < uc->tcg_ctx->code_gen_buffer_size) {
-        tb = tcg_tb_lookup(tcg_ctx, host_pc);
+        /* host_pc is a return address, which for a call that ends the TB
+           (a noreturn helper) is the TB's end, outside it: look up the
+           call itself, as cpu_restore_state_from_tb searches for it */
+        tb = tcg_tb_lookup(tcg_ctx, host_pc - GETPC_ADJ);
         if (tb) {
             cpu_restore_state_from_tb(cpu, tb, host_pc, will_exit);
             if (tb_cflags(tb) & CF_NOCACHE) {

@@ -545,6 +545,11 @@ uintptr_t tcg_qemu_tb_exec(CPUArchState *env, uint8_t *tb_ptr)
                                           tci_read_reg(regs, TCG_REG_R6));
             tci_write_reg(regs, TCG_REG_R0, tmp64);
 #endif
+            /* no helper's any more: code reached otherwise (a memory or
+               interrupt hook) finds no pc rather than this one; a helper
+               that left by cpu_loop_exit skips this, but it already went
+               through cpu_restore_state, and the next call overwrites it */
+            tci_tb_ptr = 0;
             break;
         case INDEX_op_br:
             label = tci_read_label(&tb_ptr);
